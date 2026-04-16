@@ -16,9 +16,24 @@ export default function AboutHero() {
             Insight &amp; <em className="font-lora italic text-brand-pink">Life Development</em>
           </h1>
           <p className="mt-6 max-w-lg font-dm text-base font-light leading-relaxed text-charcoal-muted">
-            The 360 Living Institute is dedicated to helping individuals, families, and organizations achieve wholeness
-            through structured, evidence-based transformation. Our focus is on guiding people through life transitions
-            while emphasizing prevention over crisis management.
+            <strong className="font-semibold text-charcoal">360 Living Institute</strong> is a center for professional
+            counselling, mental well-being, and personal development institute committed to transforming lives, by
+            offering personalized psychological insight services to individuals, Teams of organisations, communities and
+            families through evidence-based psychological practice, life strategies, and human-centered interventions.
+            <br />
+            <br />
+            Rooted in counselling psychology and preventive mental health, the Institute provides holistic, culturally
+            responsive, and ethically grounded services that address emotional well-being, life transitions, leadership
+            effectiveness, and sustainable personal growth.
+            <br />
+            <br />
+            At 360 Living Institute, we believe that{' '}
+            <strong className="font-semibold text-charcoal">
+              mental well-being is foundational to productivity, healthy relationships, leadership, and national
+              development
+            </strong>
+            . Our work integrates psychological science, practical life skills, and value-based approaches to help
+            individuals and institutions thrive across all stages of life.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -44,9 +59,9 @@ export default function AboutHero() {
             height={960}
             className="h-[480px] w-full rounded-2xl object-cover object-top"
           />
-          <div className="absolute right-4 top-4 rounded-full border border-brand-green-light bg-white px-3 py-1.5 text-xs font-medium text-brand-green shadow-sm">
+          {/* <div className="absolute right-4 top-4 rounded-full border border-brand-green-light bg-white px-3 py-1.5 text-xs font-medium text-brand-green shadow-sm">
             Est. 2020
-          </div>
+          </div> */}
           <div className="absolute bottom-4 left-4 flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
             <Users className="text-brand-green" size={18} strokeWidth={1.75} aria-hidden />
             <div>

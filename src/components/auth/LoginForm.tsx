@@ -12,17 +12,46 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [needsEmailVerify, setNeedsEmailVerify] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMsg, setResendMsg] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
 
+  async function handleResend() {
+    if (!email) return
+    setResending(true)
+    setResendMsg('')
+    setError('')
+    const supabase = createClient()
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
+    if (resendError) {
+      setError(resendError.message)
+      setResending(false)
+      return
+    }
+    setResendMsg('Verification email sent. Please check your inbox (and spam).')
+    setResending(false)
+  }
+
   async function handleLogin() {
     setLoading(true)
     setError('')
+    setResendMsg('')
+    setNeedsEmailVerify(false)
     const supabase = createClient()
     const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
     if (signInError) {
       setError(signInError.message)
+      const msg = signInError.message.toLowerCase()
+      if (msg.includes('email') && (msg.includes('confirm') || msg.includes('verify') || msg.includes('verified'))) {
+        setNeedsEmailVerify(true)
+      }
       setLoading(false)
       return
     }
@@ -52,9 +81,41 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-sm">
+    <form
+      className="flex flex-col gap-4 max-w-sm"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (loading || !email || !password) return
+        void handleLogin()
+      }}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
+      )}
+      {needsEmailVerify && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-charcoal">
+          <p className="font-dm text-sm text-charcoal">
+            Your email isn’t verified yet. Please check your inbox for the confirmation link.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void handleResend()}
+              disabled={resending || !email}
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 px-4 py-2 text-xs font-dm text-charcoal-muted hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Resending…</span>
+                </>
+              ) : (
+                'Resend confirmation email'
+              )}
+            </button>
+            {resendMsg && <span className="text-xs text-brand-green font-dm">{resendMsg}</span>}
+          </div>
+        </div>
       )}
       <div>
         <label className="text-xs font-medium text-charcoal block mb-1.5">Email Address</label>
@@ -91,8 +152,7 @@ export default function LoginForm() {
         </div>
       </div>
       <button
-        type="button"
-        onClick={handleLogin}
+        type="submit"
         disabled={loading || !email || !password}
         className="bg-brand-pink text-white rounded-full px-6 py-3 text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
       >
@@ -105,6 +165,6 @@ export default function LoginForm() {
           </>
         )}
       </button>
-    </div>
+    </form>
   )
 }

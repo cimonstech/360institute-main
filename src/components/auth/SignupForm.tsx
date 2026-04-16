@@ -9,14 +9,27 @@ export default function SignupForm() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [resendMsg, setResendMsg] = useState('')
 
   async function handleSignup() {
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
     setLoading(true)
     setError('')
+    setResendMsg('')
     const supabase = createClient()
     const { error: signUpError } = await supabase.auth.signUp({
       email,
@@ -35,6 +48,26 @@ export default function SignupForm() {
     setLoading(false)
   }
 
+  async function handleResend() {
+    if (!email) return
+    setResending(true)
+    setError('')
+    setResendMsg('')
+    const supabase = createClient()
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    })
+    if (resendError) {
+      setError(resendError.message)
+      setResending(false)
+      return
+    }
+    setResendMsg('Verification email sent. Please check your inbox (and spam).')
+    setResending(false)
+  }
+
   if (success) {
     return (
       <div className="max-w-sm">
@@ -45,12 +78,46 @@ export default function SignupForm() {
         <p className="text-sm font-light text-charcoal-muted leading-relaxed">
           We sent a verification link to <strong>{email}</strong>. Click the link to verify your account and get started.
         </p>
+        <div className="mt-6">
+          {resendMsg && (
+            <div className="mb-3 rounded-xl border border-brand-green-light bg-brand-green-pale px-4 py-3 text-sm text-charcoal">
+              {resendMsg}
+            </div>
+          )}
+          {error && (
+            <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleResend()}
+            disabled={resending}
+            className="inline-flex items-center justify-center rounded-full border border-gray-200 px-5 py-2.5 text-sm font-dm text-charcoal-muted hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {resending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Resending…</span>
+              </>
+            ) : (
+              'Resend verification email'
+            )}
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-sm">
+    <form
+      className="flex flex-col gap-4 max-w-sm"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (loading || !fullName || !email || !password || !confirmPassword) return
+        void handleSignup()
+      }}
+    >
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{error}</div>
       )}
@@ -103,13 +170,31 @@ export default function SignupForm() {
           </button>
         </div>
       </div>
+      <div>
+        <label className="text-xs font-medium text-charcoal block mb-1.5">Confirm Password *</label>
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? 'text' : 'password'}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Repeat password"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 pr-11 text-sm text-charcoal focus:outline-none focus:border-brand-pink transition-colors placeholder:text-charcoal-muted/50"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-charcoal-muted"
+          >
+            {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </div>
       <p className="text-xs text-charcoal-muted -mt-2">
         By creating an account, you agree that your information is handled confidentially.
       </p>
       <button
-        type="button"
-        onClick={handleSignup}
-        disabled={loading || !fullName || !email || !password}
+        type="submit"
+        disabled={loading || !fullName || !email || !password || !confirmPassword}
         className="bg-brand-pink text-white rounded-full px-6 py-3 text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
       >
         {loading ? (
@@ -121,6 +206,6 @@ export default function SignupForm() {
           </>
         )}
       </button>
-    </div>
+    </form>
   )
 }

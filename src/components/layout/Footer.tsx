@@ -7,7 +7,7 @@ const quickLinks = [
   { label: 'About', href: '/about' },
   { label: 'Services', href: '/services' },
   { label: 'Our Team', href: '/team' },
-  { label: 'Blog', href: '/blog' },
+  { label: 'Live Life Well', href: '/blog' },
   { label: 'Events', href: '/events' },
   { label: 'Resources', href: '/resources' },
   { label: 'Contact', href: '/contact' },
@@ -17,7 +17,7 @@ const companyLinks = [
   { label: 'About Us', href: '/about' },
   { label: 'Our Mission', href: '/about#mission' },
   { label: 'Our Team', href: '/team' },
-  { label: 'Blog', href: '/blog' },
+  { label: 'Live Life Well', href: '/blog' },
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Terms of Service', href: '/terms' },
   { label: 'Therapy Guide', href: '/resources' },
@@ -29,13 +29,13 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-4">
           <div>
-            <div className="relative h-10 w-[120px]">
+            <div className="relative h-20 w-[240px]">
               <Image
-                src="/images/logo.png"
+                src="/images/logo2.png"
                 alt="360 Living Institute"
                 fill
                 className="object-contain object-left brightness-0 invert"
-                sizes="120px"
+                sizes="240px"
               />
             </div>
             <p className="mt-3 max-w-xs font-dm text-xs leading-relaxed text-white/50">

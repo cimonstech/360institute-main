@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.css'
 import { validateEnv } from '@/lib/env'
+import { metadataBaseUrl, rootOpenGraphDefaults, rootTwitterDefaults } from '@/lib/seo'
 
 validateEnv()
 
+const defaultTitle = '360 Living Institute'
+const defaultDescription =
+  'Transforming Lives Through Psychological Insight & Life Development. Counselling, life transition support, and corporate wellness in Accra, Ghana.'
+
 export const metadata: Metadata = {
-  title: '360 Living Institute',
-  description:
-    'Transforming Lives Through Psychological Insight & Life Development. Counselling, life transition support, and corporate wellness in Accra, Ghana.',
+  metadataBase: metadataBaseUrl(),
+  title: defaultTitle,
+  description: defaultDescription,
   keywords: ['counselling', 'psychology', 'mental health', 'life transitions', 'Accra', 'Ghana'],
   manifest: '/favicon/site.webmanifest',
   icons: {
@@ -18,12 +24,39 @@ export const metadata: Metadata = {
     shortcut: '/favicon/favicon.ico',
     apple: '/favicon/apple-touch-icon.png',
   },
+  openGraph: {
+    ...rootOpenGraphDefaults,
+    title: defaultTitle,
+    description: defaultDescription,
+    url: '/',
+  },
+  twitter: {
+    ...rootTwitterDefaults,
+    title: defaultTitle,
+    description: defaultDescription,
+  },
 }
+
+const GA_MEASUREMENT_ID = 'G-93EL5VXJ3H'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
+        {children}
+      </body>
     </html>
   )
 }
