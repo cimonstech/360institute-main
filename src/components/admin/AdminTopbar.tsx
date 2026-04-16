@@ -5,7 +5,17 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { format } from 'date-fns'
 
+/** Longer prefixes first so `/admin` does not swallow `/admin/blog`, etc. */
 const crumbs: { prefix: string; label: string }[] = [
+  { prefix: '/admin/foundation/applications', label: 'Foundation Applications' },
+  { prefix: '/admin/foundation/partners', label: 'Foundation Partners' },
+  { prefix: '/admin/foundation/volunteers', label: 'Foundation Volunteers' },
+  { prefix: '/admin/foundation/sponsors', label: 'Foundation Sponsors' },
+  { prefix: '/admin/foundation', label: 'Foundation Overview' },
+  { prefix: '/admin/resources', label: 'Resources' },
+  { prefix: '/admin/blog', label: 'Blog Posts' },
+  { prefix: '/admin/media', label: 'Media' },
+  { prefix: '/admin/events', label: 'Events' },
   { prefix: '/admin/settings', label: 'Settings' },
   { prefix: '/admin/emails', label: 'Email Logs' },
   { prefix: '/admin/calendar', label: 'Calendar' },

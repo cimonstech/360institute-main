@@ -24,12 +24,12 @@ function rateLimit(
   return { allowed: true, remaining: maxRequests - record.count }
 }
 
-setInterval(() => {
+function pruneExpiredRateLimits() {
   const now = Date.now()
   for (const [key, value] of rateLimitMap.entries()) {
     if (now > value.resetTime) rateLimitMap.delete(key)
   }
-}, 5 * 60 * 1000)
+}
 
 function buildContentSecurityPolicy(): string {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || ''
@@ -62,6 +62,8 @@ function buildContentSecurityPolicy(): string {
 }
 
 export async function proxy(request: NextRequest) {
+  pruneExpiredRateLimits()
+
   const { pathname } = request.nextUrl
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||

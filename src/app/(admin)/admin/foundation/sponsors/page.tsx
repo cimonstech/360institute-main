@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { FoundationSponsor } from '@/types'
 import FoundationSubmissionActions from '@/components/admin/foundation/FoundationSubmissionActions'
-import { programOptions } from '@/components/get-involved/programOptions'
+import { programOptions } from '@/lib/foundation-program-options'
 
 export const dynamic = 'force-dynamic'
 

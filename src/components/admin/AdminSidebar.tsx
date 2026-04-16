@@ -14,7 +14,13 @@ import {
   BarChart2,
   Globe,
   FileText,
+  Inbox,
+  ClipboardList,
+  Handshake,
+  Heart,
+  Gift,
   Image as ImageIcon,
+  BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +35,7 @@ const nav: {
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
   { href: '/admin/blog', label: 'Blog Posts', icon: FileText },
+  { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   { href: '/admin/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/events', label: 'Events', icon: CalendarDays },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
@@ -37,6 +44,19 @@ const nav: {
 const secondary = [
   { href: '/admin/emails', label: 'Email Logs', icon: BarChart2 },
 ] as const
+
+const foundation: {
+  href: string
+  label: string
+  icon: typeof LayoutDashboard
+  exact?: boolean
+}[] = [
+  { href: '/admin/foundation', label: 'Foundation Overview', icon: Inbox, exact: true },
+  { href: '/admin/foundation/applications', label: 'Applications', icon: ClipboardList },
+  { href: '/admin/foundation/partners', label: 'Partners', icon: Handshake },
+  { href: '/admin/foundation/volunteers', label: 'Volunteers', icon: Heart },
+  { href: '/admin/foundation/sponsors', label: 'Sponsors', icon: Gift },
+]
 
 export default function AdminSidebar() {
   const pathname = usePathname()
@@ -68,7 +88,7 @@ export default function AdminSidebar() {
         <p className="text-xs text-white/40 mt-1 font-dm">Admin Panel</p>
       </div>
 
-      <nav className="flex flex-col gap-1 p-4 flex-1">
+      <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
         {nav.map(({ href, label, icon: Icon, exact }) => (
           <Link
             key={href}
@@ -94,6 +114,23 @@ export default function AdminSidebar() {
             className={cn(
               'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors font-dm',
               active(href)
+                ? 'bg-brand-pink text-white'
+                : 'text-white/60 hover:bg-white/5 hover:text-white'
+            )}
+          >
+            <Icon size={18} aria-hidden />
+            {label}
+          </Link>
+        ))}
+
+        <div className="px-4 py-2 font-dm text-xs uppercase tracking-widest text-white/20">Foundation</div>
+        {foundation.map(({ href, label, icon: Icon, exact }) => (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors font-dm',
+              active(href, exact)
                 ? 'bg-brand-pink text-white'
                 : 'text-white/60 hover:bg-white/5 hover:text-white'
             )}

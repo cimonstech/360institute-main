@@ -7,6 +7,11 @@ import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminTopbar from '@/components/admin/AdminTopbar'
 import type { Profile } from '@/types'
 
+/** Plain object for the client boundary — avoids proxy/getter chains from DB rows breaking RSC serialization. */
+function toClientProfile(row: Profile): Profile {
+  return JSON.parse(JSON.stringify(row)) as Profile
+}
+
 export const metadata: Metadata = {
   title: 'Admin | 360 Living Institute',
   ...privatePageRobots(),
@@ -45,7 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-screen bg-charcoal-light flex font-dm">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0">
-        <AdminTopbar profile={profile as Profile} />
+        <AdminTopbar profile={toClientProfile(profile as Profile)} />
         <main className="flex-1 p-6 lg:p-8 overflow-auto">{children}</main>
       </div>
     </div>

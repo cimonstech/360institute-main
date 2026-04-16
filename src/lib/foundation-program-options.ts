@@ -1,3 +1,4 @@
+/** Labels for Foundation sponsor/program interest keys — shared by admin only. */
 export const programOptions = {
   'thrive360-experience': 'Thrive360 Experience',
   'transformation-lab': '360 Transformation Lab',
