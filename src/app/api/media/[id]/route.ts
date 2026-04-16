@@ -2,7 +2,6 @@ import { assertAdminSession } from '@/lib/assert-admin'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { deleteFromR2 } from '@/lib/r2'
 import { NextRequest, NextResponse } from 'next/server'
-import { sanitizeUuid } from '@/lib/sanitize'
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await assertAdminSession()
@@ -11,12 +10,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   }
 
   const { id } = await params
-  const safeId = sanitizeUuid(id)
-  if (!safeId) {
-    return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
-  }
   const admin = createAdminClient()
-  const { data: row, error: fetchError } = await admin.from('media').select('file_url').eq('id', safeId).maybeSingle()
+  const { data: row, error: fetchError } = await admin.from('media').select('file_url').eq('id', id).maybeSingle()
 
   if (fetchError || !row) {
     return NextResponse.json({ error: fetchError?.message || 'Not found' }, { status: fetchError ? 500 : 404 })
@@ -29,7 +24,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     // Continue to remove DB row so library stays consistent if object already gone
   }
 
-  const { error: delError } = await admin.from('media').delete().eq('id', safeId)
+  const { error: delError } = await admin.from('media').delete().eq('id', id)
   if (delError) {
     return NextResponse.json({ error: delError.message }, { status: 500 })
   }

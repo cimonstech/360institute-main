@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import type { BookingFormData, Service } from '@/types'
+import type { BookingFormData, PricingSettings, Service } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import StepService from '@/components/booking/StepService'
 import StepDateTime from '@/components/booking/StepDateTime'
@@ -27,6 +27,7 @@ export default function BookingWizard() {
   const [success, setSuccess] = useState(false)
   const [dashboardAvailable, setDashboardAvailable] = useState(false)
   const [sessionInfo, setSessionInfo] = useState<{ name: string } | null>(null)
+  const [pricingSettings, setPricingSettings] = useState<PricingSettings | null>(null)
   const [appointmentId, setAppointmentId] = useState<string | null>(null)
   const [accountCreated, setAccountCreated] = useState(false)
   const [formLoadedAt, setFormLoadedAt] = useState(() => Date.now())
@@ -34,10 +35,14 @@ export default function BookingWizard() {
 
   const prefillDoneRef = useRef(false)
 
-  function safeDurationMinutes(v: number | undefined) {
-    const n = Number(v)
-    if (!Number.isFinite(n) || n <= 0) return 60
-    return Math.min(240, Math.max(15, Math.round(n)))
+  function sessionPriceGhs(service: Service | null, pricing: PricingSettings | null): number | null {
+    if (!pricing?.show_prices) return null
+    if (!service) return Number(pricing.global_price_ghs)
+    const useGlobal = service.use_global_price !== false
+    if (useGlobal) return Number(pricing.global_price_ghs)
+    const o = service.price_override_ghs
+    if (o == null || Number.isNaN(Number(o))) return Number(pricing.global_price_ghs)
+    return Number(o)
   }
 
   const mergeFormData = useCallback((patch: Partial<BookingFormData>) => {
@@ -51,6 +56,14 @@ export default function BookingWizard() {
       if (!user) return
       const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       if (profile?.full_name) setSessionInfo({ name: profile.full_name })
+    })()
+  }, [])
+
+  useEffect(() => {
+    ;(async () => {
+      const supabase = createClient()
+      const { data } = await supabase.from('pricing_settings').select('*').limit(1).maybeSingle()
+      setPricingSettings((data as PricingSettings) ?? null)
     })()
   }, [])
 
@@ -73,13 +86,11 @@ export default function BookingWizard() {
   }, [step])
 
   const selectService = (s: Service) => {
-    const serviceTitle =
-      s.slug === 'life-transition-counselling' ? '360 Transition Reset Program' : s.title
     setSelectedService(s)
     mergeFormData({
       service_id: s.id,
-      service_title: serviceTitle,
-      duration_minutes: safeDurationMinutes(s.duration_minutes),
+      service_title: s.title,
+      duration_minutes: s.duration_minutes,
     })
   }
 
@@ -152,7 +163,7 @@ export default function BookingWizard() {
           email: formData.client_email!,
           password: formData.password,
           options: {
-            data: { full_name: formData.client_name, phone: formData.client_phone ?? '', role: 'client' },
+            data: { full_name: formData.client_name, role: 'client' },
             emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         })
@@ -160,9 +171,8 @@ export default function BookingWizard() {
         setAccountCreated(true)
       }
 
-      const duration = safeDurationMinutes(
+      const duration =
         formData.duration_minutes ?? selectedService?.duration_minutes ?? 60
-      )
 
       const res = await fetch('/api/appointments/create', {
         method: 'POST',
@@ -261,6 +271,7 @@ export default function BookingWizard() {
               <p className="font-mono text-lg font-medium text-brand-pink tracking-wider">
                 {appointmentId.slice(0, 8).toUpperCase()}
               </p>
+              <p className="text-xs text-charcoal-muted mt-2 font-dm">Use this as your MoMo payment reference</p>
             </div>
           )}
           <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
@@ -360,6 +371,8 @@ export default function BookingWizard() {
           {step === 4 && (
             <StepConfirm
               formData={formData}
+              pricing={pricingSettings}
+              sessionPriceGhs={sessionPriceGhs(selectedService, pricingSettings)}
             />
           )}
 

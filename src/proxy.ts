@@ -51,11 +51,11 @@ function buildContentSecurityPolicy(): string {
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     `img-src 'self' data: blob: https:${imgExtra}`,
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.googletagmanager.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "frame-src https://www.google.com https://*.google.com",
     "frame-ancestors 'none'",
   ].join('; ')
@@ -106,10 +106,11 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // Never mutate request.cookies in middleware; set on response only.
-          cookiesToSet.forEach(({ name, value, options }) => {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
-          })
+          )
         },
       },
     }
@@ -130,6 +131,12 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set('error', 'unauthorized')
       url.searchParams.set('reason', !profile ? 'no_profile' : 'not_admin')
       return NextResponse.redirect(url)
+    }
+  }
+
+  if (pathname.startsWith('/dashboard')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login?redirect=/dashboard', request.url))
     }
   }
 

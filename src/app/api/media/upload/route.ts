@@ -25,24 +25,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   }
 
-  const allowedTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/avif',
-    'image/gif',
-    'application/pdf',
-  ]
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
   if (!allowedTypes.includes(file.type)) {
-    return NextResponse.json({ error: 'Invalid file type. Only images and PDFs allowed.' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid file type. Only images allowed.' }, { status: 400 })
   }
 
-  const maxSize = file.type === 'application/pdf' ? 20 * 1024 * 1024 : 5 * 1024 * 1024
-  if (file.size > maxSize) {
-    return NextResponse.json(
-      { error: `File too large. Max ${file.type === 'application/pdf' ? '20MB' : '5MB'}.` },
-      { status: 400 }
-    )
+  if (file.size > 5 * 1024 * 1024) {
+    return NextResponse.json({ error: 'File too large. Max 5MB.' }, { status: 400 })
   }
 
   let fileUrl: string

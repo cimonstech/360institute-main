@@ -1,18 +1,12 @@
 import { assertAdminSession } from '@/lib/assert-admin'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { sanitizeUuid } from '@/lib/sanitize'
 
-const BodySchema = z.object({
-  services: z.array(
-    z.object({
-      id: z.string().min(1),
-      use_global_price: z.boolean(),
-      price_override_ghs: z.number().finite().nullable(),
-    })
-  ),
-})
+type ServicePricingRow = {
+  id: string
+  use_global_price: boolean
+  price_override_ghs: number | null
+}
 
 export async function POST(request: NextRequest) {
   const auth = await assertAdminSession()
@@ -20,30 +14,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: auth.message }, { status: auth.status })
   }
 
-  let raw: unknown
+  let body: { services?: ServicePricingRow[] }
   try {
-    raw = await request.json()
+    body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const parsed = BodySchema.safeParse(raw)
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid services payload' }, { status: 400 })
+  const services = body.services
+  if (!Array.isArray(services)) {
+    return NextResponse.json({ error: 'services array required' }, { status: 400 })
   }
-  const services = parsed.data.services
 
   const admin = createAdminClient()
   for (const s of services) {
-    const id = sanitizeUuid(s.id)
-    if (!id) continue
+    if (!s?.id) continue
     const { error } = await admin
       .from('services')
       .update({
         use_global_price: s.use_global_price,
         price_override_ghs: s.price_override_ghs,
       })
-      .eq('id', id)
+      .eq('id', s.id)
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }

@@ -1,27 +1,25 @@
-import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
-import { canonicalPath, privatePageRobots } from '@/lib/seo'
 import Link from 'next/link'
 import Image from 'next/image'
 
-export const metadata: Metadata = {
-  title: 'Admin Sign In | 360 Living Foundation',
-  description: 'Admin sign-in for authorised 360 Living Foundation administrators.',
-  ...privatePageRobots(),
-  alternates: canonicalPath('/login'),
-}
+export const metadata = { title: 'Sign In | 360 Living Institute' }
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
       <div className="flex flex-col justify-center px-8 lg:px-16 py-16">
         <Link href="/" className="mb-12">
-          <Image src="/images/Logo-1.png" alt="360 Living Foundation" width={160} height={48} className="h-10 w-auto" />
+          <Image src="/images/logo.png" alt="360 Living Institute" width={120} height={40} className="h-10 w-auto" />
         </Link>
         <p className="text-xs font-medium tracking-widest uppercase text-brand-pink mb-2">Welcome back</p>
-        <h1 className="font-lora text-3xl font-normal text-charcoal mb-2">Admin Sign In</h1>
-        <p className="text-sm font-light text-charcoal-muted mb-8">This area is for authorised administrators only.</p>
+        <h1 className="font-lora text-3xl font-normal text-charcoal mb-2">Sign in to your account</h1>
+        <p className="text-sm font-light text-charcoal-muted mb-8">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="text-brand-pink hover:underline">
+            Create one
+          </Link>
+        </p>
         <Suspense fallback={<div className="max-w-sm h-56 rounded-xl bg-charcoal-light/60 animate-pulse" />}>
           <LoginForm />
         </Suspense>

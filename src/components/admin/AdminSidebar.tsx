@@ -14,7 +14,6 @@ import {
   BarChart2,
   Globe,
   FileText,
-  BookOpen,
   Image as ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -30,7 +29,6 @@ const nav: {
   { href: '/admin/clients', label: 'Clients', icon: Users },
   { href: '/admin/calendar', label: 'Calendar', icon: Calendar },
   { href: '/admin/blog', label: 'Blog Posts', icon: FileText },
-  { href: '/admin/resources', label: 'Resources', icon: BookOpen },
   { href: '/admin/media', label: 'Media', icon: ImageIcon },
   { href: '/admin/events', label: 'Events', icon: CalendarDays },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
@@ -60,7 +58,7 @@ export default function AdminSidebar() {
       <div className="p-6 border-b border-white/10">
         <Link href="/admin" className="block">
           <Image
-            src="/images/logo2.png"
+            src="/images/logo.png"
             alt="360 Living Institute"
             width={100}
             height={34}

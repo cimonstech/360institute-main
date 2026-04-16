@@ -1,41 +1,14 @@
-import type { Metadata } from 'next'
 import Navbar from '@/components/layout/Navbar'
 import Hero from '@/components/homepage/Hero'
 import TrustBar from '@/components/homepage/TrustBar'
-import PurposeSection from '@/components/homepage/PurposeSection'
 import AboutSection from '@/components/homepage/AboutSection'
-import HealGrowRise from '@/components/homepage/HealGrowRise'
 import Services from '@/components/homepage/Services'
-import OurApproach from '@/components/homepage/OurApproach'
-import ImpactGoals from '@/components/homepage/ImpactGoals'
-import FocusAreasHome from '@/components/homepage/FocusAreasHome'
+import MeetExperts from '@/components/homepage/MeetExperts'
 import Testimonials from '@/components/homepage/Testimonials'
-import JourneyBanner from '@/components/homepage/JourneyBanner'
 import CTASection from '@/components/homepage/CTASection'
 import Footer from '@/components/layout/Footer'
 import StripAuthErrorQuery from '@/components/homepage/StripAuthErrorQuery'
 import Link from 'next/link'
-import { canonicalPath, rootOpenGraphDefaults, rootTwitterDefaults } from '@/lib/seo'
-
-export const metadata: Metadata = {
-  title: '360 Living Foundation',
-  description:
-    'Transforming minds, empowering lives, and building a thriving society through counselling, mentorship, and life development. Accra, Ghana.',
-  alternates: canonicalPath('/'),
-  openGraph: {
-    ...rootOpenGraphDefaults,
-    title: '360 Living Foundation',
-    description:
-      'Counselling, mentorship, and life development programmes for youth, women, and communities. Heal, Grow and Rise!',
-    url: '/',
-  },
-  twitter: {
-    ...rootTwitterDefaults,
-    title: '360 Living Foundation',
-    description:
-      'Counselling, mentorship, and life development programmes for youth, women, and communities. Heal, Grow and Rise!',
-  },
-}
 
 type HomeProps = {
   searchParams: Promise<{ error?: string; reason?: string }>
@@ -65,15 +38,10 @@ export default async function HomePage({ searchParams }: HomeProps) {
       <Navbar />
       <Hero />
       <TrustBar />
-      <PurposeSection />
       <AboutSection />
-      <HealGrowRise />
       <Services />
-      <OurApproach />
-      <ImpactGoals />
-      <FocusAreasHome />
+      <MeetExperts />
       <Testimonials />
-      <JourneyBanner />
       <CTASection />
       <Footer />
     </main>

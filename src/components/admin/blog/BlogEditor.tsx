@@ -38,12 +38,8 @@ import {
   Loader2,
   X,
   Upload,
-  FileText,
 } from 'lucide-react'
 import type { BlogPost } from '@/types'
-import type { Media } from '@/types'
-import type { PublishTo } from '@/types'
-import MediaPickerModal from '@/components/admin/blog/MediaPickerModal'
 
 interface Props {
   post?: BlogPost | null
@@ -53,9 +49,6 @@ export default function BlogEditor({ post }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
-  const libraryUploadRef = useRef<HTMLInputElement>(null)
-  const pdfInputRef = useRef<HTMLInputElement>(null)
-  const infographicInputRef = useRef<HTMLInputElement>(null)
 
   const [title, setTitle] = useState(post?.title || '')
   const [slug, setSlug] = useState(post?.slug || '')
@@ -68,24 +61,6 @@ export default function BlogEditor({ post }: Props) {
   const [featured, setFeatured] = useState(post?.featured || false)
   const [coverImageUrl, setCoverImageUrl] = useState(post?.cover_image_url || '')
   const [coverImageAlt, setCoverImageAlt] = useState(post?.cover_image_alt || '')
-  const [publishTo, setPublishTo] = useState<PublishTo>(post?.publish_to || 'institute')
-  const [category, setCategory] = useState(post?.category || '')
-
-  const initialAttachmentType: 'none' | 'pdf' | 'infographic' =
-    post?.attachment_url
-      ? post.attachment_url.toLowerCase().endsWith('.pdf') || (post.attachment_name || '').toLowerCase().endsWith('.pdf')
-        ? 'pdf'
-        : 'infographic'
-      : 'none'
-  const [attachmentType, setAttachmentType] = useState<'none' | 'pdf' | 'infographic'>(initialAttachmentType)
-  const [attachmentUrl, setAttachmentUrl] = useState(post?.attachment_url || '')
-  const [attachmentName, setAttachmentName] = useState(post?.attachment_name || '')
-  const [attachmentSize, setAttachmentSize] = useState<number | null>(
-    typeof post?.attachment_size === 'number' ? post.attachment_size : null
-  )
-  const [uploadingAttachment, setUploadingAttachment] = useState(false)
-  const [showAttachmentPicker, setShowAttachmentPicker] = useState(false)
-  const [attachmentPickerType, setAttachmentPickerType] = useState<'image' | 'pdf'>('pdf')
 
   const [saving, setSaving] = useState(false)
   const [pendingSave, setPendingSave] = useState<'draft' | 'published' | null>(null)
@@ -96,13 +71,6 @@ export default function BlogEditor({ post }: Props) {
   const [preview, setPreview] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [showLinkInput, setShowLinkInput] = useState(false)
-
-  const [showMediaPicker, setShowMediaPicker] = useState(false)
-  const [mediaPickerTarget, setMediaPickerTarget] = useState<'editor' | 'cover'>('editor')
-  const [mediaFilter, setMediaFilter] = useState<'all' | 'blog' | 'event' | 'general'>('all')
-  const [mediaQuery, setMediaQuery] = useState('')
-  const [mediaItems, setMediaItems] = useState<Media[]>([])
-  const [loadingMedia, setLoadingMedia] = useState(false)
 
   useEffect(() => {
     if (!post && title) {
@@ -123,9 +91,6 @@ export default function BlogEditor({ post }: Props) {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
-        // We provide our own configured Link + Underline extensions below.
-        link: false,
-        underline: false,
       }),
       TiptapImage.configure({
         inline: false,
@@ -190,66 +155,6 @@ export default function BlogEditor({ post }: Props) {
     [editor]
   )
 
-  const insertFromLibrary = useCallback(
-    (m: Media) => {
-      if (mediaPickerTarget === 'cover') {
-        setCoverImageUrl(m.file_url)
-        setCoverImageAlt(m.alt_text || m.file_name)
-      } else {
-        if (!editor) return
-        editor.chain().focus().setImage({ src: m.file_url, alt: m.alt_text || '' }).run()
-      }
-      setShowMediaPicker(false)
-      setMediaQuery('')
-    },
-    [editor, mediaPickerTarget]
-  )
-
-  const loadMedia = useCallback(async () => {
-    setLoadingMedia(true)
-    try {
-      const qs = new URLSearchParams()
-      qs.set('used_in', mediaFilter)
-      qs.set('limit', '120')
-      const res = await fetch(`/api/media/list?${qs.toString()}`)
-      const j = (await res.json()) as { error?: string; media?: Media[] }
-      if (!res.ok) throw new Error(j.error || 'Failed to load media')
-      setMediaItems(j.media ?? [])
-    } catch (e) {
-      console.error('[BlogEditor] loadMedia', e)
-      setMediaItems([])
-      alert(e instanceof Error ? e.message : 'Failed to load media')
-    } finally {
-      setLoadingMedia(false)
-    }
-  }, [mediaFilter])
-
-  useEffect(() => {
-    if (!showMediaPicker) return
-    void loadMedia()
-  }, [showMediaPicker, loadMedia])
-
-  async function uploadToLibrary(files: FileList | null) {
-    if (!files?.length) return
-    setLoadingMedia(true)
-    try {
-      for (const file of Array.from(files)) {
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('alt_text', file.name.replace(/\.[^.]+$/, ''))
-        fd.append('used_in', 'blog')
-        const res = await fetch('/api/media/upload', { method: 'POST', body: fd })
-        const j = await res.json()
-        if (!res.ok) throw new Error(j.error || 'Upload failed')
-      }
-      await loadMedia()
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Upload failed')
-    } finally {
-      setLoadingMedia(false)
-    }
-  }
-
   async function uploadCoverImage(file: File) {
     setUploadingCover(true)
     try {
@@ -272,28 +177,6 @@ export default function BlogEditor({ post }: Props) {
       alert('Cover image upload failed.')
     } finally {
       setUploadingCover(false)
-    }
-  }
-
-  async function uploadAttachment(file: File) {
-    setUploadingAttachment(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('alt_text', title || file.name)
-      formData.append('used_in', 'blog')
-      const res = await fetch('/api/media/upload', { method: 'POST', body: formData })
-      const data = (await res.json()) as { error?: string; media?: { file_url: string; file_name: string; file_size?: number | null } }
-      if (!res.ok) throw new Error(data.error || 'Upload failed')
-      if (!data.media?.file_url) throw new Error('No file URL returned')
-      setAttachmentUrl(data.media.file_url)
-      setAttachmentName(file.name)
-      setAttachmentSize(file.size)
-    } catch (err) {
-      alert('Upload failed. Please try again.')
-      console.error(err)
-    } finally {
-      setUploadingAttachment(false)
     }
   }
 
@@ -330,12 +213,6 @@ export default function BlogEditor({ post }: Props) {
         cover_image_url: coverImageUrl,
         cover_image_alt: coverImageAlt,
         author_name: authorName,
-        publish_to: publishTo,
-        resource_type: attachmentType === 'none' ? 'article' : attachmentType,
-        category,
-        attachment_url: attachmentType !== 'none' ? attachmentUrl : null,
-        attachment_name: attachmentType !== 'none' ? attachmentName : null,
-        attachment_size: attachmentType !== 'none' ? attachmentSize : null,
         tags,
         read_time_minutes: readTime,
         featured,
@@ -656,19 +533,6 @@ export default function BlogEditor({ post }: Props) {
                     </ToolbarButton>
                   </ToolbarGroup>
 
-                  <ToolbarGroup>
-                    <ToolbarButton
-                      type="button"
-                      onClick={() => {
-                        setMediaPickerTarget('editor')
-                        setShowMediaPicker(true)
-                      }}
-                      title="Insert from Media Library"
-                    >
-                      <Upload size={14} />
-                    </ToolbarButton>
-                  </ToolbarGroup>
-
                   <div className="ml-auto px-2 text-xs text-charcoal-muted/60">{wordCount} words</div>
                 </div>
 
@@ -765,33 +629,21 @@ export default function BlogEditor({ post }: Props) {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-2">
-                <button
-                  type="button"
-                  onClick={() => coverInputRef.current?.click()}
-                  className="flex h-28 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 transition-colors hover:border-brand-pink hover:bg-brand-pink-pale/30"
-                >
-                  {uploadingCover ? (
-                    <Loader2 size={20} className="animate-spin text-brand-pink" />
-                  ) : (
-                    <>
-                      <Upload size={18} className="mb-2 text-charcoal-muted/50" />
-                      <p className="text-xs text-charcoal-muted">Upload from device</p>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMediaPickerTarget('cover')
-                    setShowMediaPicker(true)
-                  }}
-                  className="flex h-14 w-full items-center justify-center rounded-xl border border-gray-200 bg-white font-dm text-xs font-medium text-charcoal-muted transition-colors hover:bg-charcoal-light"
-                >
-                  Choose from Media Library
-                </button>
-                <p className="text-xs text-charcoal-muted/50">JPG, PNG, WEBP up to 5MB</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => coverInputRef.current?.click()}
+                className="flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 transition-colors hover:border-brand-pink hover:bg-brand-pink-pale/30"
+              >
+                {uploadingCover ? (
+                  <Loader2 size={20} className="animate-spin text-brand-pink" />
+                ) : (
+                  <>
+                    <Upload size={20} className="mb-2 text-charcoal-muted/50" />
+                    <p className="text-xs text-charcoal-muted">Click to upload cover image</p>
+                    <p className="mt-1 text-xs text-charcoal-muted/50">JPG, PNG, WEBP up to 5MB</p>
+                  </>
+                )}
+              </button>
             )}
             <input
               ref={coverInputRef}
@@ -820,47 +672,6 @@ export default function BlogEditor({ post }: Props) {
               >
                 {status === 'published' ? 'Published' : 'Draft'}
               </span>
-            </div>
-
-            {/* Publish To */}
-            <div className="mb-4">
-              <label className="text-xs text-charcoal-muted block mb-1.5">Publish to</label>
-              <div className="flex gap-2">
-                {(['institute', 'foundation', 'both'] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setPublishTo(option)}
-                    className={`flex-1 text-xs font-medium py-2 rounded-full border transition-colors capitalize ${
-                      publishTo === option
-                        ? 'bg-brand-pink text-white border-brand-pink'
-                        : 'bg-white text-charcoal-muted border-gray-200 hover:border-brand-pink'
-                    }`}
-                  >
-                    {option === 'both' ? 'Both Sites' : option === 'institute' ? 'Institute' : 'Foundation'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Category */}
-            <div className="mb-4">
-              <label className="text-xs text-charcoal-muted block mb-1.5">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-pink"
-              >
-                <option value="">No category</option>
-                <option value="mental-health">Mental Health</option>
-                <option value="life-transitions">Life Transitions</option>
-                <option value="youth">Youth Development</option>
-                <option value="women">Women Empowerment</option>
-                <option value="relationships">Relationships & Family</option>
-                <option value="wellness">Wellness & Self-Care</option>
-                <option value="leadership">Leadership & Work</option>
-                <option value="community">Community</option>
-              </select>
             </div>
 
             <label className="mb-4 flex cursor-pointer items-center justify-between">
@@ -930,153 +741,6 @@ export default function BlogEditor({ post }: Props) {
             </div>
           </div>
 
-          {/* Attachment */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-xs font-medium text-charcoal uppercase tracking-wider mb-4">
-              Attachment <span className="text-charcoal-muted/50 normal-case font-normal">(optional)</span>
-            </p>
-
-            <div className="flex gap-2 mb-4">
-              {(['none', 'pdf', 'infographic'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    setAttachmentType(t)
-                    if (t === 'none') {
-                      setAttachmentUrl('')
-                      setAttachmentName('')
-                      setAttachmentSize(null)
-                    }
-                  }}
-                  className={`flex-1 text-xs py-1.5 rounded-full border transition-colors capitalize ${
-                    attachmentType === t
-                      ? 'bg-brand-green text-white border-brand-green'
-                      : 'bg-white text-charcoal-muted border-gray-200'
-                  }`}
-                >
-                  {t === 'none' ? 'None' : t === 'pdf' ? 'PDF' : 'Infographic'}
-                </button>
-              ))}
-            </div>
-
-            {attachmentType === 'pdf' && (
-              <div>
-                {attachmentUrl ? (
-                  <div className="bg-brand-green-pale rounded-xl p-3 flex items-center gap-3">
-                    <FileText size={16} className="text-brand-green flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-charcoal truncate">{attachmentName || 'PDF'}</p>
-                      <p className="text-xs text-charcoal-muted">
-                        {attachmentSize ? `${(attachmentSize / 1024).toFixed(0)} KB` : ''}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAttachmentUrl('')
-                        setAttachmentName('')
-                        setAttachmentSize(null)
-                      }}
-                      aria-label="Remove attachment"
-                    >
-                      <X size={14} className="text-charcoal-muted" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => pdfInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-200 rounded-xl h-24 flex flex-col items-center justify-center cursor-pointer hover:border-brand-green hover:bg-brand-green-pale/30 transition-colors"
-                  >
-                    {uploadingAttachment ? (
-                      <Loader2 size={18} className="animate-spin text-brand-green" />
-                    ) : (
-                      <>
-                        <Upload size={18} className="text-charcoal-muted/50 mb-1" />
-                        <p className="text-xs text-charcoal-muted">Click to upload PDF</p>
-                        <p className="text-xs text-charcoal-muted/50">Max 20MB</p>
-                      </>
-                    )}
-                  </div>
-                )}
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) void uploadAttachment(f)
-                    e.target.value = ''
-                  }}
-                />
-              </div>
-            )}
-
-            {attachmentType === 'infographic' && (
-              <div>
-                {attachmentUrl ? (
-                  <div className="relative">
-                    <div className="relative w-full h-32 rounded-xl overflow-hidden bg-charcoal-light">
-                      <NextImage src={attachmentUrl} alt="Infographic" fill className="object-contain" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAttachmentUrl('')
-                        setAttachmentName('')
-                        setAttachmentSize(null)
-                      }}
-                      className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm border border-gray-200"
-                      aria-label="Remove infographic"
-                    >
-                      <X size={12} className="text-red-500" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => infographicInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-200 rounded-xl h-24 flex flex-col items-center justify-center cursor-pointer hover:border-brand-pink hover:bg-brand-pink-pale/30 transition-colors"
-                  >
-                    {uploadingAttachment ? (
-                      <Loader2 size={18} className="animate-spin text-brand-pink" />
-                    ) : (
-                      <>
-                        <ImageIcon size={18} className="text-charcoal-muted/50 mb-1" />
-                        <p className="text-xs text-charcoal-muted">Click to upload infographic</p>
-                        <p className="text-xs text-charcoal-muted/50">JPG, PNG, WEBP</p>
-                      </>
-                    )}
-                  </div>
-                )}
-                <input
-                  ref={infographicInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) void uploadAttachment(f)
-                    e.target.value = ''
-                  }}
-                />
-              </div>
-            )}
-
-            {attachmentType !== 'none' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setAttachmentPickerType(attachmentType === 'pdf' ? 'pdf' : 'image')
-                  setShowAttachmentPicker(true)
-                }}
-                className="w-full mt-3 border border-gray-200 text-charcoal-muted text-xs rounded-full py-2 hover:bg-charcoal-light transition-colors"
-              >
-                Or pick from Media Library
-              </button>
-            )}
-          </div>
-
           <div className="rounded-2xl border border-gray-100 bg-white p-5">
             <p className="mb-3 text-xs font-medium uppercase tracking-wider text-charcoal">Excerpt</p>
             <textarea
@@ -1130,147 +794,6 @@ export default function BlogEditor({ post }: Props) {
           </div>
         </div>
       </div>
-
-      {showMediaPicker && (
-        <>
-          <div
-            className="fixed inset-0 z-50 bg-black/40"
-            aria-hidden
-            onClick={() => setShowMediaPicker(false)}
-          />
-          <div className="fixed left-1/2 top-1/2 z-[51] w-[min(920px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <div>
-                <p className="font-dm text-xs font-medium uppercase tracking-wider text-charcoal-muted">
-                  Media Library
-                </p>
-                <p className="font-lora text-lg text-charcoal">
-                  {mediaPickerTarget === 'cover' ? 'Select a cover image' : 'Insert an image'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowMediaPicker(false)}
-                className="rounded-full border border-gray-200 bg-white p-2 hover:bg-charcoal-light"
-                aria-label="Close"
-              >
-                <X size={16} className="text-charcoal-muted" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-3 border-b border-gray-100 bg-charcoal-light/40 px-5 py-3 sm:flex-row sm:items-center">
-              <div className="flex flex-wrap gap-2">
-                {(['all', 'blog', 'event', 'general'] as const).map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setMediaFilter(f)}
-                    className={`rounded-full px-3 py-1.5 font-dm text-xs font-medium capitalize ${
-                      mediaFilter === f ? 'bg-brand-pink text-white' : 'border border-gray-200 bg-white text-charcoal-muted'
-                    }`}
-                  >
-                    {f === 'all' ? 'All' : f}
-                  </button>
-                ))}
-              </div>
-              <input
-                value={mediaQuery}
-                onChange={(e) => setMediaQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 font-dm text-xs text-charcoal focus:border-brand-pink focus:outline-none sm:max-w-xs"
-              />
-              <div className="flex items-center gap-2 sm:ml-auto">
-                <button
-                  type="button"
-                  onClick={() => libraryUploadRef.current?.click()}
-                  className="rounded-full bg-brand-pink px-4 py-2 font-dm text-xs font-medium text-white hover:opacity-90"
-                >
-                  Upload
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void loadMedia()}
-                  className="rounded-full border border-gray-200 bg-white px-4 py-2 font-dm text-xs text-charcoal-muted hover:bg-charcoal-light"
-                >
-                  Refresh
-                </button>
-                <input
-                  ref={libraryUploadRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    void uploadToLibrary(e.target.files)
-                    e.target.value = ''
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="max-h-[70vh] overflow-y-auto p-5">
-              {loadingMedia ? (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <div key={i} className="aspect-square animate-pulse rounded-xl bg-charcoal-light" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
-                  {mediaItems
-                    .filter((m) => {
-                      const q = mediaQuery.trim().toLowerCase()
-                      if (!q) return true
-                      return (
-                        m.file_name.toLowerCase().includes(q) ||
-                        (m.alt_text || '').toLowerCase().includes(q)
-                      )
-                    })
-                    .map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => insertFromLibrary(m)}
-                        className="group relative aspect-square overflow-hidden rounded-xl border border-gray-100 bg-charcoal-light text-left"
-                        title="Select"
-                      >
-                        <NextImage
-                          src={m.file_url}
-                          alt={m.alt_text || m.file_name}
-                          fill
-                          className="object-cover"
-                          sizes="200px"
-                        />
-                        <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/30" aria-hidden />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1">
-                          <p className="truncate font-dm text-[11px] text-white">{m.file_name}</p>
-                        </div>
-                      </button>
-                    ))}
-                </div>
-              )}
-
-              {!loadingMedia && mediaItems.length === 0 && (
-                <p className="py-10 text-center font-dm text-sm text-charcoal-muted">
-                  No media yet. Upload an image to get started.
-                </p>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      <MediaPickerModal
-        isOpen={showAttachmentPicker}
-        onClose={() => setShowAttachmentPicker(false)}
-        type={attachmentPickerType}
-        onSelect={(url, name, size) => {
-          setAttachmentUrl(url)
-          setAttachmentName(name)
-          setAttachmentSize(size ?? null)
-          setShowAttachmentPicker(false)
-        }}
-      />
     </div>
   )
 }

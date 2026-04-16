@@ -1,13 +1,6 @@
-import type { Metadata } from 'next'
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm'
-import { canonicalPath, privatePageRobots } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Set New Password | 360 Living Institute',
-  description: 'Choose a new password for your 360 Living Institute account.',
-  ...privatePageRobots(),
-  alternates: canonicalPath('/auth/reset-password'),
-}
+export const metadata = { title: 'Set New Password | 360 Living Institute' }
 
 export default function ResetPasswordPage() {
   return (
